@@ -21,8 +21,10 @@ class Addition(AnonymizationOperationInterface):
         return self.AddEventAtPositionX(xesLog, eventTemplate, conditional, doNotUseRandomlyGeneratedTimestamp, -2)
 
     def AddEventAtPositionX(self, xesLog, eventTemplate, conditional=None, doNotUseRandomlyGeneratedTimestamp=False, position=-1):
+        logTypeDict = self.__getEventAttributeTypes(xesLog)
+
         for case_index, case in enumerate(xesLog):
-            newEvent = self.__getEvent(eventTemplate, xesLog)
+            newEvent = self.__getEvent(eventTemplate, xesLog, logTypeDict)
             traceLength = len(case)
             lastEvent = case[traceLength - 1]
 
@@ -55,16 +57,15 @@ class Addition(AnonymizationOperationInterface):
                         typeDict[key] = type(event[key])
         return typeDict
 
-    def __getEvent(self, eventTemplate, log):
+    def __getEvent(self, eventTemplate, log, logTypeDict):
         newEvent = {}
 
-        typeDict = self.__getEventAttributeTypes(log)
         for attribute in eventTemplate:
-            if(typeDict[attribute['Name']] == type(1)):
+            if(logTypeDict[attribute['Name']] == type(1)):
                 newEvent[attribute['Name']] = int(attribute['Value'])
-            elif(typeDict[attribute['Name']] == type(1.1)):
+            elif(logTypeDict[attribute['Name']] == type(1.1)):
                 newEvent[attribute['Name']] = float(attribute['Value'])
-            elif(typeDict[attribute['Name']] == type(False)):
+            elif(logTypeDict[attribute['Name']] == type(False)):
                 newEvent[attribute['Name']] = bool(attribute['Value'])
             else:
                 newEvent[attribute['Name']] = attribute['Value']
