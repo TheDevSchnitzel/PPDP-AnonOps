@@ -1,0 +1,29 @@
+Log;Operation;Duration;Run
+event_log_sequence_10_1000.xes;Substitution - Event;0.0989987850189209;0
+event_log_sequence_10_1000.xes;Suppression - Event;0.030000686645507812;0
+event_log_sequence_10_1000.xes;Cryptography - Hashing;1.351996660232544;0
+event_log_sequence_10_1000.xes;Swapping - Event;0.42201900482177734;0
+event_log_sequence_10_1000.xes;Generalization - Timestamp;0.1569826602935791;0
+event_log_sequence_10_1000.xes;Condensation - Name;3.0180394649505615;0
+event_log_sequence_10_1000.xes;Addition - Random Placing;0.08699584007263184;0
+event_log_sequence_10_1000.xes;Substitution - Event;0.08799529075622559;1
+event_log_sequence_10_1000.xes;Suppression - Event;0.03199911117553711;1
+event_log_sequence_10_1000.xes;Cryptography - Hashing;1.4890151023864746;1
+event_log_sequence_10_1000.xes;Swapping - Event;0.4679882526397705;1
+event_log_sequence_10_1000.xes;Generalization - Timestamp;0.1829977035522461;1
+event_log_sequence_10_1000.xes;Condensation - Name;2.9130024909973145;1
+event_log_sequence_10_1000.xes;Addition - Random Placing;0.09299945831298828;1
+event_log_sequence_10_1000.xes;Substitution - Event;0.08900260925292969;2
+event_log_sequence_10_1000.xes;Suppression - Event;0.03198528289794922;2
+event_log_sequence_10_1000.xes;Cryptography - Hashing;1.2720024585723877;2
+event_log_sequence_10_1000.xes;Swapping - Event;0.4130122661590576;2
+event_log_sequence_10_1000.xes;Generalization - Timestamp;0.15701055526733398;2
+event_log_sequence_10_1000.xes;Condensation - Name;2.808985948562622;2
+event_log_sequence_10_1000.xes;Addition - Random Placing;0.0880134105682373;2
+event_log_sequence_10_1000.xes;Substitution - Event;0.0919954776763916;3
+event_log_sequence_10_1000.xes;Suppression - Event;0.03499889373779297;3
+event_log_sequence_10_1000.xes;Cryptography - Hashing;1.3130149841308594;3
+event_log_sequence_10_1000.xes;Swapping - Event;0.4590005874633789;3
+event_log_sequence_10_1000.xes;Generalization - Timestamp;0.15101885795593262;3
+event_log_sequence_10_1000.xes;Condensation - Name;3.0439960956573486;3
+event_log_sequence_10_1000.xes;Addition - Random Placing;0.08300375938415527;3

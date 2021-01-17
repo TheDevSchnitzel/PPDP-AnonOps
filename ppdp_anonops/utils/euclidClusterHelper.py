@@ -130,3 +130,21 @@ def oneHotEncodeNonNumericAttributes(namedAttributes, instanceAttribute2DArray):
                 values[j][i] = oneHotEncodedDict[i]['OneHotNormalized'][idx]
 
     return values, valueToOneHotDict, oneHotToValueDict
+
+# Make sure all values provided are actually numeric
+
+
+def checkNumericAttributes(values):
+    numCheck = [x for x in values if not isinstance(x, numbers.Number)]
+    if(len(numCheck) > 0):
+        raise NotImplementedError("Use a numeric attribute")
+    pass
+
+
+def getValuesOfSensitiveAttributePerClusterAsDict(clusterLabels, values):
+    valueToClusterDict = {}
+    for i in range(len(clusterLabels)):
+        # [-1] as the sensitive attribute value is always the last in the list
+        if values[i][-1] not in valueToClusterDict.keys():
+            valueToClusterDict[values[i][-1]] = clusterLabels[i]
+    return valueToClusterDict

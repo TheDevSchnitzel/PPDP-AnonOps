@@ -29,7 +29,7 @@ class Condensation(AnonymizationOperationInterface):
         kmeans.fit(values)
 
         # Get a dict with the value as key and the cluster it is assigned to as value
-        valueToClusterDict = self.__getValuesOfSensitiveAttributePerClusterAsDict(kmeans.labels_, values)
+        valueToClusterDict = euclidClusterHelper.getValuesOfSensitiveAttributePerClusterAsDict(kmeans.labels_, values)
 
         clusterValueDict = {}
         if condensationFunction.lower() == "mode":
@@ -64,7 +64,7 @@ class Condensation(AnonymizationOperationInterface):
         kmeans.fit(values)
 
         # Get a dict with the value as key and the cluster it is assigned to as value
-        valueToClusterDict = self.__getValuesOfSensitiveAttributePerClusterAsDict(kmeans.labels_, values)
+        valueToClusterDict = euclidClusterHelper.getValuesOfSensitiveAttributePerClusterAsDict(kmeans.labels_, values)
 
         clusterValueDict = {}
         if condensationFunction.lower() == "mode":
@@ -97,7 +97,7 @@ class Condensation(AnonymizationOperationInterface):
         clusters = km.fit_predict(values)
 
         # Get a dict with the value as key and the cluster it is assigned to as value
-        valueToClusterDict = self.__getValuesOfSensitiveAttributePerClusterAsDict(clusters, values)
+        valueToClusterDict = euclidClusterHelper.getValuesOfSensitiveAttributePerClusterAsDict(clusters, values)
 
         clusterValueDict = {}
         if condensationFunction.lower() == "mode":
@@ -126,7 +126,7 @@ class Condensation(AnonymizationOperationInterface):
         clusters = km.fit_predict(values)
 
         # Get a dict with the value as key and the cluster it is assigned to as value
-        valueToClusterDict = self.__getValuesOfSensitiveAttributePerClusterAsDict(clusters, values)
+        valueToClusterDict = euclidClusterHelper.getValuesOfSensitiveAttributePerClusterAsDict(clusters, values)
 
         clusterValueDict = {}
         if condensationFunction.lower() == "mode":
@@ -233,21 +233,6 @@ class Condensation(AnonymizationOperationInterface):
         # Sort dict by value
         s = {k: v for k, v in sorted(s.items(), key=lambda item: item[1])}
         return next(iter(s.keys()))
-
-    # Make sure all values provided are actually numeric
-    def __checkNumericAttributes(self, values):
-        numCheck = [x for x in values if not isinstance(x, numbers.Number)]
-        if(len(numCheck) > 0):
-            raise NotImplementedError("Use a numeric attribute")
-        pass
-
-    def __getValuesOfSensitiveAttributePerClusterAsDict(self, clusterLabels, values):
-        valueToClusterDict = {}
-        for i in range(len(clusterLabels)):
-            # [-1] as the sensitive attribute value is always the last in the list
-            if values[i][-1] not in valueToClusterDict.keys():
-                valueToClusterDict[values[i][-1]] = clusterLabels[i]
-        return valueToClusterDict
 
     def __getModeOfSensitiveAttributePerCluster(self, clusterLabels, values, k_clusters):
         clusterValues = {k: [] for k in range(k_clusters)}
