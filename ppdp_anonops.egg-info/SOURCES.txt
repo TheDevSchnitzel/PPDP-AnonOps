@@ -2,7 +2,7 @@ README.md
 setup.py
 ppdp_anonops/__init__.py
 ppdp_anonops/addition.py
-ppdp_anonops/anonymizationOperationInterface.py
+ppdp_anonops/anonymizationOperation.py
 ppdp_anonops/condensation.py
 ppdp_anonops/cryptography.py
 ppdp_anonops/generalization.py

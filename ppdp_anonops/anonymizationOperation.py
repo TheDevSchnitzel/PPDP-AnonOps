@@ -5,7 +5,7 @@ from pm4py.objects.log.exporter.xes import factory as xes_exporter
 from p_privacy_metadata.privacyExtension import privacyExtension
 
 
-class AnonymizationOperationInterface(metaclass=abc.ABCMeta):
+class AnonymizationOperation(metaclass=abc.ABCMeta):
     def __init__(self):
         pass
         #    self.xesLogPath = xesLogPath

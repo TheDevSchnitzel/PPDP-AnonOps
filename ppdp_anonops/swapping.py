@@ -1,4 +1,4 @@
-from .anonymizationOperationInterface import AnonymizationOperationInterface
+from .anonymizationOperation import AnonymizationOperation
 import collections
 import random
 
@@ -15,7 +15,7 @@ from kmodes.kmodes import KModes
 from ppdp_anonops.utils import euclidClusterHelper
 
 
-class Swapping(AnonymizationOperationInterface):
+class Swapping(AnonymizationOperation):
     def __init__(self):
         super(Swapping, self).__init__()
 

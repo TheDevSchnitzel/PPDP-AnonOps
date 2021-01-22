@@ -5,4 +5,4 @@ from .generalization import Generalization
 from .substitution import Substitution
 from .suppression import Suppression
 from .swapping import Swapping
-from.anonymizationOperationInterface import AnonymizationOperationInterface
+from.anonymizationOperation import AnonymizationOperation

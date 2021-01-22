@@ -1,4 +1,4 @@
-from .anonymizationOperationInterface import AnonymizationOperationInterface
+from .anonymizationOperation import AnonymizationOperation
 import collections
 
 # k-means
@@ -13,7 +13,7 @@ from ppdp_anonops.utils import euclidClusterHelper
 import statistics
 
 
-class Condensation(AnonymizationOperationInterface):
+class Condensation(AnonymizationOperation):
 
     def __init__(self):
         super(Condensation, self).__init__()

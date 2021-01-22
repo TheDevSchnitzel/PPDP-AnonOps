@@ -1,8 +1,8 @@
-from .anonymizationOperationInterface import AnonymizationOperationInterface
+from .anonymizationOperation import AnonymizationOperation
 import random
 
 
-class Substitution(AnonymizationOperationInterface):
+class Substitution(AnonymizationOperation):
 
     def __init__(self):
         super(Substitution, self).__init__()

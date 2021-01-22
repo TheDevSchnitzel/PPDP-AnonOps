@@ -1,10 +1,10 @@
-from .anonymizationOperationInterface import AnonymizationOperationInterface
+from .anonymizationOperation import AnonymizationOperation
 from copy import deepcopy
 import random
 from datetime import timedelta
 
 
-class Addition(AnonymizationOperationInterface):
+class Addition(AnonymizationOperation):
     """WARNING / TODO: Currently the value-matching for the matching attribute takes only the last event in the trace into consideration!"""
     # Possibly set up a lambda based filter, user can enter a python lambda that will be evaluated
 

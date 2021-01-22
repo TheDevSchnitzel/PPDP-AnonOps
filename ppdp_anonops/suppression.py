@@ -1,9 +1,9 @@
-from .anonymizationOperationInterface import AnonymizationOperationInterface
+from .anonymizationOperation import AnonymizationOperation
 from pm4py.objects.log.importer.xes import factory as xes_importer_factory
 import hashlib
 
 
-class Suppression(AnonymizationOperationInterface):
+class Suppression(AnonymizationOperation):
     """Replace a """
 
     def __init__(self):

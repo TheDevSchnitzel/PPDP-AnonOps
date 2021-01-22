@@ -1,8 +1,8 @@
-from .anonymizationOperationInterface import AnonymizationOperationInterface
+from .anonymizationOperation import AnonymizationOperation
 from .utils import TaxonomyTree
 
 
-class Generalization(AnonymizationOperationInterface):
+class Generalization(AnonymizationOperation):
 
     def __init__(self):
         super(Generalization, self).__init__()
