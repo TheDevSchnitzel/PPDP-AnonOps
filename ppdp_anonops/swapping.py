@@ -160,33 +160,35 @@ class Swapping(AnonymizationOperation):
         return self.AddExtension(xesLog, 'swa', 'case', sensitiveAttribute)
 
     def SwapEventAttributeByEuclidianDistance(self, xesLog, sensitiveAttribute, descriptiveAttributes, weightDict, k_clusters):
-        attributes = descriptiveAttributes
-        attributes.append(sensitiveAttribute)
-        weights = [weightDict[a] for a in attributes]
+        allAttributes = descriptiveAttributes.copy()
+        allAttributes.append(sensitiveAttribute)
+        weights = [weightDict[a] for a in allAttributes]
 
-        values = self._getEventMultipleAttributeValues(xesLog, attributes, distinct=True)
+        values = self._getEventMultipleAttributeValues(xesLog, allAttributes, distinct=True)
+
+        # Get sensitive values here, before oneHotEncoding changes the value array
+        sensitiveValues = [x[-1] for x in values]
+
+        # Clustering over all attributes (including sensitive one) is valid, as the sensitive one is weighted as well
         cluster = euclidClusterHelper.euclidDistCluster_Fit(values, k_clusters, weights)
 
-        clusterToValuesDict = {i: [] for i in range(len(cluster['labels']))}
-        valueToClusterDict = {}
-        for i in range(len(cluster['labels'])):
-            if(values[i][-1] not in clusterToValuesDict[cluster['labels'][i]]):
-                clusterToValuesDict[cluster['labels'][i]].append(values[i][-1])
-            if(values[i][-1] not in valueToClusterDict):
-                valueToClusterDict[values[i][-1]] = cluster['labels'][i]
+        # Get a dict with the value as key and the cluster it is assigned to as value (Including the sensitive attribute, as is is used to discriminate as well)
+        descrToClusterDict = self.valuesToCluster(cluster['labels'], values)
+
+        # Returns a dictionary x[cluster] = [sensitive values in the cluster]
+        clusterToValuesDict = self.clusterToValues(cluster['labels'], sensitiveValues, k_clusters)
 
         # Choose random new value from clustered data
         for case_index, case in enumerate(xesLog):
             for event_index, event in enumerate(case):
-                if(sensitiveAttribute in event.keys()):
-                    # Get possible values from current values cluster
-                    listOfValues = clusterToValuesDict[valueToClusterDict[event[sensitiveAttribute]]]
 
-                    # Generate new random index
-                    rnd = random.randint(0, len(listOfValues) - 1)
+                # Only proceed if the descriptive and sensitive attributes are present in the event
+                if(all([a in event.keys() for a in allAttributes])):
 
-                    # Overwrite old attribute value with new one
-                    event[sensitiveAttribute] = listOfValues[rnd]
+                    # Discriminating values of the descriptive attributes (including the sensitive one!) as tuple
+                    descriptiveTuple = tuple([event[d] for d in allAttributes])
+
+                    event[sensitiveAttribute] = self.__assignNewValue(descriptiveTuple, descrToClusterDict, clusterToValuesDict)
 
         return self.AddExtension(xesLog, 'swa', 'event', sensitiveAttribute)
 
@@ -194,31 +196,30 @@ class Swapping(AnonymizationOperation):
         # Make sure the sensitive attribute is last in line for later indexing
         allAttributes = descriptiveAttributes.copy()
         allAttributes.append(sensitiveAttribute)
-
         weights = [weightDict[a] for a in allAttributes]
 
         values = self._getCaseMultipleAttributeValues(xesLog, allAttributes, distinct=True)
+
+        # Clustering over all attributes (including sensitive one) is valid, as the sensitive one is weighted as well
         cluster = euclidClusterHelper.euclidDistCluster_Fit(values, k_clusters, weights)
 
-        clusterToValuesDict = {i: [] for i in range(len(cluster['labels']))}
-        valueToClusterDict = {}
-        for i in range(len(cluster['labels'])):
-            if(values[i][-1] not in clusterToValuesDict[cluster['labels'][i]]):
-                clusterToValuesDict[cluster['labels'][i]].append(values[i][-1])
-            if(values[i][-1] not in valueToClusterDict):
-                valueToClusterDict[values[i][-1]] = cluster['labels'][i]
+        # Get a dict with the value as key and the cluster it is assigned to as value (Including the sensitive attribute, as is is used to discriminate as well)
+        descrToClusterDict = self.valuesToCluster(cluster['labels'], values)
+
+        # Returns a dictionary x[cluster] = [sensitive values in the cluster]
+        sensitiveValues = [x[-1] for x in values]
+        clusterToValuesDict = self.clusterToValues(cluster['labels'], sensitiveValues, k_clusters)
 
         # Choose random new value from clustered data
         for case_index, case in enumerate(xesLog):
-            if(sensitiveAttribute in case.attributes.keys()):
-                # Get possible values from current values cluster
-                listOfValues = clusterToValuesDict[valueToClusterDict[case.attributes[sensitiveAttribute]]]
+            # Only proceed if the descriptive and sensitive attributes are present in the case
+            if(all([a in case.attributes.keys() for a in allAttributes])):
 
-                # Generate new random index
-                rnd = random.randint(0, len(listOfValues) - 1)
+                # Discriminating values of the descriptive attributes (including the sensitive one!) as tuple
+                descriptiveTuple = tuple([case.attributes[d] for d in allAttributes])
 
                 # Overwrite old attribute value with new one
-                case.attributes[sensitiveAttribute] = listOfValues[rnd]
+                case.attributes[sensitiveAttribute] = self.__assignNewValue(descriptiveTuple, descrToClusterDict, clusterToValuesDict)
 
         return self.AddExtension(xesLog, 'swa', 'case', sensitiveAttribute)
 

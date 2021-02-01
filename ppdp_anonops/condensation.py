@@ -121,77 +121,72 @@ class Condensation(AnonymizationOperation):
         return self.AddExtension(xesLog, 'con', 'case', sensitiveAttribute)
 
     def CondenseEventAttributeByEuclidianDistance(self, xesLog, sensitiveAttribute, descriptiveAttributes, weightDict, k_clusters, condensationFunction):
-        attributes = descriptiveAttributes
-        attributes.append(sensitiveAttribute)
-        weights = [weightDict[a] for a in attributes]
+        allAttributes = descriptiveAttributes.copy()
+        allAttributes.append(sensitiveAttribute)
+        weights = [weightDict[a] for a in allAttributes]
 
-        values = []
-        for case_index, case in enumerate(xesLog):
-            for event_index, event in enumerate(case):
-                eventValues = []
-                for attr in attributes:
-                    eventValues.append(event[attr])
-                values.append(eventValues)
+        # Get all events attribute values
+        values = self._getEventMultipleAttributeValues(xesLog, allAttributes)
+        sensitiveValues = [x[-1] for x in values]
 
+        # Clustering over all attributes (including sensitive one) is valid, as the sensitive one is weighted as well
         cluster = euclidClusterHelper.euclidDistCluster_Fit(values, k_clusters, weights)
 
-        clusterValueDict = {}
-        if condensationFunction.lower() == "mode":
-            clusterValueDict = self.__getModeOfSensitiveAttributePerCluster(cluster['labels'], values, k_clusters)
-        elif condensationFunction.lower() == "mean":
-            clusterValueDict = self.__getMeanOfSensitiveAttributePerCluster(cluster['labels'], values, k_clusters)
-        elif condensationFunction.lower() == "median":
-            clusterValueDict = self.__getMedianOfSensitiveAttributePerCluster(cluster['labels'], values, k_clusters)
+        # Get a dict with the value as key and the cluster it is assigned to as value
+        descrToClusterDict = self.valuesToCluster(cluster['labels'], values)
 
-        i = 0
+        # Condense the data in the clusters
+        clusterValueDict = self.__condenseClusterData(cluster['labels'], sensitiveValues, k_clusters, condensationFunction)
+
+        # Apply clustered data mode to log
         for case_index, case in enumerate(xesLog):
             for event_index, event in enumerate(case):
-                event[sensitiveAttribute] = clusterValueDict[cluster['labels'][i]]
-                i = i + 1
+                # Only proceed if the descriptive and sensitive attributes are present in the event
+                if(all([a in event.keys() for a in allAttributes])):
+
+                    # Discriminating values of the descriptive attributes (AND SENSITIVE ATTR!) as tuple
+                    descriptiveTuple = tuple([event[d] for d in allAttributes])
+
+                    # Cluster the sensitive attribute value belongs to, discriminated by the descriptive attributes
+                    cluster = descrToClusterDict[descriptiveTuple]
+
+                    # Assign new value to cluster
+                    event[allAttributes[-1]] = clusterValueDict[cluster]
 
         return self.AddExtension(xesLog, 'con', 'event', sensitiveAttribute)
 
     def CondenseCaseAttributeByEuclidianDistance(self, xesLog, sensitiveAttribute, descriptiveAttributes, weightDict, k_clusters, condensationFunction):
         # Move Unique-Event-Attributes up to trace attributes
-        attributes = descriptiveAttributes
-        attributes.append(sensitiveAttribute)
-        weights = [weightDict[a] for a in attributes]
+        allAttributes = descriptiveAttributes.copy()
+        allAttributes.append(sensitiveAttribute)
+        weights = [weightDict[a] for a in allAttributes]
 
-        values = []
-        for case_index, case in enumerate(xesLog):
-            caseValues = []
-            for attr in attributes:
+        # Get all cases attribute values
+        values = self._getCaseMultipleAttributeValues(xesLog, allAttributes)
+        sensitiveValues = [x[-1] for x in values]
 
-                # Check whether the attribute is a unique event attribute (Only occuring once and in the first event)
-                if(attr not in case.attributes.keys()):
-                    # Ensure the attribute exists, even if it is None
-                    val = None
-
-                    unique = True
-                    for event_index, event in enumerate(case):
-                        if ((event_index == 0 and attr not in event.keys()) or (event_index > 0 and attr in event.keys())):
-                            unique = False
-
-                    if(unique):
-                        val = case[0][attr]
-                    caseValues.append(val)
-                else:
-                    caseValues.append(case.attributes[attr])
-            values.append(caseValues)
-
+        # Clustering over all attributes (including sensitive one) is valid, as the sensitive one is weighted as well
         cluster = euclidClusterHelper.euclidDistCluster_Fit(values, k_clusters, weights)
-        clusterValueDict = {}
-        if condensationFunction.lower() == "mode":
-            clusterValueDict = self.__getModeOfSensitiveAttributePerCluster(cluster['labels'], values, k_clusters)
-        elif condensationFunction.lower() == "mean":
-            clusterValueDict = self.__getMeanOfSensitiveAttributePerCluster(cluster['labels'], values, k_clusters)
-        elif condensationFunction.lower() == "median":
-            clusterValueDict = self.__getMedianOfSensitiveAttributePerCluster(cluster['labels'], values, k_clusters)
 
-        i = 0
+        # Get a dict with the value as key and the cluster it is assigned to as value
+        descrToClusterDict = self.valuesToCluster(cluster['labels'], values)
+
+        # Condense the data in the clusters
+        clusterValueDict = self.__condenseClusterData(cluster['labels'], sensitiveValues, k_clusters, condensationFunction)
+
+        # Apply clustered data mode to log
         for case_index, case in enumerate(xesLog):
-            case.attributes[sensitiveAttribute] = clusterValueDict[cluster['labels'][i]]
-            i = i + 1
+            # Only proceed if the descriptive and sensitive attributes are present in the case
+            if(all([a in case.attributes.keys() for a in allAttributes])):
+
+                # Discriminating values of the descriptive attributes (AND SENSITIVE ONE!) as tuple
+                descriptiveTuple = tuple([case.attributes[d] for d in allAttributes])
+
+                # Cluster the sensitive attribute value belongs to, discriminated by the descriptive attributes
+                cluster = descrToClusterDict[descriptiveTuple]
+
+                # Assign new value to cluster
+                case.attributes[allAttributes[-1]] = clusterValueDict[cluster]
 
         return self.AddExtension(xesLog, 'con', 'case', sensitiveAttribute)
 
@@ -270,9 +265,6 @@ class Condensation(AnonymizationOperation):
         return clusterValueDict
 
     def __applyCondensedDataOnCases(self, xesLog, allAttributes, descrToClusterDict, clusterValueDict):
-        print(descrToClusterDict)
-        print(clusterValueDict)
-
         # Apply clustered data mode to log
         for case_index, case in enumerate(xesLog):
             # Only proceed if the descriptive and sensitive attributes are present in the case
@@ -289,9 +281,6 @@ class Condensation(AnonymizationOperation):
         return xesLog
 
     def __applyCondensedDataOnEvents(self, xesLog, allAttributes, descrToClusterDict, clusterValueDict):
-        print(descrToClusterDict)
-        print(clusterValueDict)
-
         # Apply clustered data mode to log
         for case_index, case in enumerate(xesLog):
             for event_index, event in enumerate(case):
