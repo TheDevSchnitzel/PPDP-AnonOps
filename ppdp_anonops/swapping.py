@@ -51,17 +51,7 @@ class Swapping(AnonymizationOperation):
                     # Discriminating values of the descriptive attributes as tuple
                     descriptiveTuple = tuple([event[d] for d in descriptiveAttributes])
 
-                    # Cluster the sensitive attribute value belongs to, discriminated by the descriptive attributes
-                    cluster = descrToClusterDict[descriptiveTuple]
-
-                    # Get possible values from current values cluster
-                    listOfValues = clusterToSensitiveValues[cluster]
-
-                    # Generate new random index
-                    rnd = random.randint(0, len(listOfValues) - 1)
-
-                    # Overwrite old attribute value with new one
-                    event[sensitiveAttribute] = listOfValues[rnd]
+                    event[sensitiveAttribute] = self.__assignNewValue(descriptiveTuple, descrToClusterDict, clusterToSensitiveValues)
 
         self.AddExtension(xesLog, 'swa', 'event', sensitiveAttribute)
         return xesLog
@@ -97,17 +87,8 @@ class Swapping(AnonymizationOperation):
                 # Discriminating values of the descriptive attributes as tuple
                 descriptiveTuple = tuple([case.attributes[d] for d in descriptiveAttributes])
 
-                # Cluster the sensitive attribute value belongs to, discriminated by the descriptive attributes
-                cluster = descrToClusterDict[descriptiveTuple]
-
-                # Get possible values from current values cluster
-                listOfValues = clusterToSensitiveValues[cluster]
-
-                # Generate new random index
-                rnd = random.randint(0, len(listOfValues) - 1)
-
                 # Overwrite old attribute value with new one
-                case.attributes[sensitiveAttribute] = listOfValues[rnd]
+                case.attributes[sensitiveAttribute] = self.__assignNewValue(descriptiveTuple, descrToClusterDict, clusterToSensitiveValues)
 
         self.AddExtension(xesLog, 'swa', 'case', sensitiveAttribute)
         return xesLog
@@ -117,26 +98,31 @@ class Swapping(AnonymizationOperation):
         allAttributes = descriptiveAttributes.copy()
         allAttributes.append(sensitiveAttribute)
 
+        # Extract the values of descriptive and sensitive attributes from the event log, preserving their order of discovery (IMPORTANT!)
         values = self._getEventMultipleAttributeValues(xesLog, allAttributes, distinct=True)
+        sensitiveValues = [x[-1] for x in values]
+        descriptiveValues = [x[:-1] for x in values]
+
         km = KModes(n_clusters=k_clusters, init='random')
-        clusters = km.fit_predict(values)
+        clusters = km.fit_predict(descriptiveValues)
 
         # Get a dict with the value as key and the cluster it is assigned to as value
-        valueToClusterDict = euclidClusterHelper.getValuesOfSensitiveAttributePerClusterAsDict(clusters, values)
-        clusterToValuesDict = {k: [x for x in valueToClusterDict.keys() if valueToClusterDict[x] == k] for k in range(k_clusters)}
+        descrToClusterDict = self.valuesToCluster(clusters, descriptiveValues)
+
+        # Returns a dictionary x[cluster] = [sensitive values in the cluster]
+        clusterToValuesDict = self.clusterToValues(clusters, sensitiveValues, k_clusters)
 
         # Choose random new value from clustered data
         for case_index, case in enumerate(xesLog):
             for event_index, event in enumerate(case):
-                if(sensitiveAttribute in event.keys()):
-                    # Get possible values from current values cluster
-                    listOfValues = clusterToValuesDict[valueToClusterDict[event[sensitiveAttribute]]]
 
-                    # Generate new random index
-                    rnd = random.randint(0, len(listOfValues) - 1)
+                # Only proceed if the descriptive and sensitive attributes are present in the event
+                if(all([a in event.keys() for a in allAttributes])):
 
-                    # Overwrite old attribute value with new one
-                    event[sensitiveAttribute] = listOfValues[rnd]
+                    # Discriminating values of the descriptive attributes as tuple
+                    descriptiveTuple = tuple([event[d] for d in descriptiveAttributes])
+
+                    event[sensitiveAttribute] = self.__assignNewValue(descriptiveTuple, descrToClusterDict, clusterToValuesDict)
 
         return self.AddExtension(xesLog, 'swa', 'event', sensitiveAttribute)
 
@@ -145,25 +131,31 @@ class Swapping(AnonymizationOperation):
         allAttributes = descriptiveAttributes.copy()
         allAttributes.append(sensitiveAttribute)
 
+        # Extract the values of descriptive and sensitive attributes from the event log, preserving their order of discovery (IMPORTANT!)
         values = self._getCaseMultipleAttributeValues(xesLog, allAttributes, distinct=True)
+        sensitiveValues = [x[-1] for x in values]
+        descriptiveValues = [x[:-1] for x in values]
+
         km = KModes(n_clusters=k_clusters, init='random')
-        clusters = km.fit_predict(values)
+        clusters = km.fit_predict(descriptiveValues)
 
         # Get a dict with the value as key and the cluster it is assigned to as value
-        valueToClusterDict = euclidClusterHelper.getValuesOfSensitiveAttributePerClusterAsDict(clusters, values)
-        clusterToValuesDict = {k: [x for x in valueToClusterDict.keys() if valueToClusterDict[x] == k] for k in range(k_clusters)}
+        descrToClusterDict = self.valuesToCluster(clusters, descriptiveValues)
+
+        # Returns a dictionary x[cluster] = [sensitive values in the cluster]
+        clusterToValuesDict = self.clusterToValues(clusters, sensitiveValues, k_clusters)
 
         # Choose random new value from clustered data
         for case_index, case in enumerate(xesLog):
-            if(sensitiveAttribute in case.attributes.keys()):
-                # Get possible values from current values cluster
-                listOfValues = clusterToValuesDict[valueToClusterDict[case.attributes[sensitiveAttribute]]]
 
-                # Generate new random index
-                rnd = random.randint(0, len(listOfValues) - 1)
+            # Only proceed if the descriptive and sensitive attributes are present in the case
+            if(all([a in case.attributes.keys() for a in allAttributes])):
+
+                # Discriminating values of the descriptive attributes as tuple
+                descriptiveTuple = tuple([case.attributes[d] for d in descriptiveAttributes])
 
                 # Overwrite old attribute value with new one
-                case.attributes[sensitiveAttribute] = listOfValues[rnd]
+                case.attributes[sensitiveAttribute] = self.__assignNewValue(descriptiveTuple, descrToClusterDict, clusterToValuesDict)
 
         return self.AddExtension(xesLog, 'swa', 'case', sensitiveAttribute)
 
@@ -245,3 +237,16 @@ class Swapping(AnonymizationOperation):
             if values[i] not in clusterToValueDict[clusterLabels[i]]:
                 clusterToValueDict[clusterLabels[i]].append(values[i])
         return clusterToValueDict
+
+    def __assignNewValue(self, descriptiveTuple, descrToClusterDict, clusterToSensitiveValues):
+        # Cluster the sensitive attribute value belongs to, discriminated by the descriptive attributes
+        cluster = descrToClusterDict[descriptiveTuple]
+
+        # Get possible values from current values cluster
+        listOfValues = clusterToSensitiveValues[cluster]
+
+        # Generate new random index
+        rnd = random.randint(0, len(listOfValues) - 1)
+
+        # Overwrite old attribute value with new one
+        return listOfValues[rnd]
