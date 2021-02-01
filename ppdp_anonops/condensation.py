@@ -25,7 +25,8 @@ class Condensation(AnonymizationOperation):
         # Extract the values of descriptive and sensitive attributes from the event log, preserving their order of discovery (IMPORTANT!)
         values = self._getEventMultipleAttributeValues(xesLog, allAttributes)
         sensitiveValues = [x[-1] for x in values]
-        descriptiveValues = [x[:-1] for x in values]
+        #descriptiveValues = [x[:-1] for x in values]
+        descriptiveValues = [list(y) for y in set(tuple(x[:-1]) for x in values)]
 
         values, valueToOneHotDict, oneHotToValueDict = euclidClusterHelper.oneHotEncodeNonNumericAttributes(allAttributes, values)
         descriptiveValuesEncoded = [x[:-1] for x in values]
@@ -52,7 +53,8 @@ class Condensation(AnonymizationOperation):
         # Extract the values of descriptive and sensitive attributes from the event log, preserving their order of discovery (IMPORTANT!)
         values = self._getCaseMultipleAttributeValues(xesLog, allAttributes)
         sensitiveValues = [x[-1] for x in values]
-        descriptiveValues = [x[:-1] for x in values]
+        #descriptiveValues = [x[:-1] for x in values]
+        descriptiveValues = [list(y) for y in set(tuple(x[:-1]) for x in values)]
 
         values, valueToOneHotDict, oneHotToValueDict = euclidClusterHelper.oneHotEncodeNonNumericAttributes(allAttributes, values)
         descriptiveValuesEncoded = [x[:-1] for x in values]
@@ -80,7 +82,8 @@ class Condensation(AnonymizationOperation):
         # Extract the values of descriptive and sensitive attributes from the event log, preserving their order of discovery (IMPORTANT!)
         values = self._getEventMultipleAttributeValues(xesLog, allAttributes)
         sensitiveValues = [x[-1] for x in values]
-        descriptiveValues = [x[:-1] for x in values]
+        #descriptiveValues = [x[:-1] for x in values]
+        descriptiveValues = [list(y) for y in set(tuple(x[:-1]) for x in values)]
 
         km = KModes(n_clusters=k_clusters, init='random')
         clusters = km.fit_predict(descriptiveValues)
@@ -104,7 +107,8 @@ class Condensation(AnonymizationOperation):
         # Extract the values of descriptive and sensitive attributes from the event log, preserving their order of discovery (IMPORTANT!)
         values = self._getCaseMultipleAttributeValues(xesLog, allAttributes)
         sensitiveValues = [x[-1] for x in values]
-        descriptiveValues = [x[:-1] for x in values]
+        #descriptiveValues = [x[:-1] for x in values]
+        descriptiveValues = [list(y) for y in set(tuple(x[:-1]) for x in values)]
 
         km = KModes(n_clusters=k_clusters, init='random')
         clusters = km.fit_predict(descriptiveValues)
@@ -128,12 +132,13 @@ class Condensation(AnonymizationOperation):
         # Get all events attribute values
         values = self._getEventMultipleAttributeValues(xesLog, allAttributes)
         sensitiveValues = [x[-1] for x in values]
+        descriptiveValues = [list(y) for y in set(tuple(x) for x in values)]
 
         # Clustering over all attributes (including sensitive one) is valid, as the sensitive one is weighted as well
-        cluster = euclidClusterHelper.euclidDistCluster_Fit(values, k_clusters, weights)
+        cluster = euclidClusterHelper.euclidDistCluster_Fit(descriptiveValues, k_clusters, weights)
 
         # Get a dict with the value as key and the cluster it is assigned to as value
-        descrToClusterDict = self.valuesToCluster(cluster['labels'], values)
+        descrToClusterDict = self.valuesToCluster(cluster['labels'], descriptiveValues)
 
         # Condense the data in the clusters
         clusterValueDict = self.__condenseClusterData(cluster['labels'], sensitiveValues, k_clusters, condensationFunction)
@@ -164,12 +169,13 @@ class Condensation(AnonymizationOperation):
         # Get all cases attribute values
         values = self._getCaseMultipleAttributeValues(xesLog, allAttributes)
         sensitiveValues = [x[-1] for x in values]
+        descriptiveValues = [list(y) for y in set(tuple(x) for x in values)]
 
         # Clustering over all attributes (including sensitive one) is valid, as the sensitive one is weighted as well
-        cluster = euclidClusterHelper.euclidDistCluster_Fit(values, k_clusters, weights)
+        cluster = euclidClusterHelper.euclidDistCluster_Fit(descriptiveValues, k_clusters, weights)
 
         # Get a dict with the value as key and the cluster it is assigned to as value
-        descrToClusterDict = self.valuesToCluster(cluster['labels'], values)
+        descrToClusterDict = self.valuesToCluster(cluster['labels'], descriptiveValues)
 
         # Condense the data in the clusters
         clusterValueDict = self.__condenseClusterData(cluster['labels'], sensitiveValues, k_clusters, condensationFunction)

@@ -99,7 +99,7 @@ def benchmarkCondensation(log, logName, i):
     start_time = time.time()
 
     c = Condensation()
-    c.CondenseEventAttributeBykModesCluster(log, "concept:name", [], 4, "mode")
+    c.CondenseEventAttributeBykModesCluster(log, "concept:name", ["concept:name"], 4, "mode")
 
     saveBenchmark(logName, 'Condensation - Name', (time.time() - start_time), i)
 
@@ -117,7 +117,7 @@ def benchmarkSwapping(log, logName, i):
     start_time = time.time()
 
     s = Swapping()
-    s.SwapEventAttributeBykModesClusterUsingMode(log, "concept:name", [], 5)
+    s.SwapEventAttributeBykModesClusterUsingMode(log, "concept:name", ["concept:name"], 5)
 
     saveBenchmark(logName, 'Swapping - Event', (time.time() - start_time), i)
 
