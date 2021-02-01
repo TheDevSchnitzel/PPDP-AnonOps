@@ -23,33 +23,41 @@ class Condensation(AnonymizationOperation):
         allAttributes.append(sensitiveAttribute)
 
         values = self._getEventMultipleAttributeValues(xesLog, allAttributes)
+        sensitiveValues = [x[-1] for x in values]
+        descriptiveValues = [x[:-1] for x in values]
+
         values, valueToOneHotDict, oneHotToValueDict = euclidClusterHelper.oneHotEncodeNonNumericAttributes(allAttributes, values)
+        descriptiveValuesEncoded = [x[:-1] for x in values]
 
         kmeans = KMeans(n_clusters=k_clusters)
-        kmeans.fit(values)
+        kmeans.fit(descriptiveValuesEncoded)
 
-        # Get a dict with the value as key and the cluster it is assigned to as value
-        valueToClusterDict = euclidClusterHelper.getValuesOfSensitiveAttributePerClusterAsDict(kmeans.labels_, values)
+        # Get a dict with the sensitive attribute's value as key and the cluster it is assigned to as value
+        # This is possible without using the descriptiveValuesEncoded, as all methods preserve the order of items passed to them, so no conversion between encoded and original is needed
+        descrToClusterDict = self.valuesToCluster(kmeans.labels_, descriptiveValues)
 
         clusterValueDict = {}
         if condensationFunction.lower() == "mode":
-            clusterValueDict = self.__getModeOfSensitiveAttributePerCluster(kmeans.labels_, values, k_clusters)
+            clusterValueDict = self.__getModeOfSensitiveAttributePerCluster(kmeans.labels_, sensitiveValues, k_clusters)
         elif condensationFunction.lower() == "mean":
-            clusterValueDict = self.__getMeanOfSensitiveAttributePerCluster(kmeans.labels_, values, k_clusters)
+            clusterValueDict = self.__getMeanOfSensitiveAttributePerCluster(kmeans.labels_, sensitiveValues, k_clusters)
         elif condensationFunction.lower() == "median":
-            clusterValueDict = self.__getMedianOfSensitiveAttributePerCluster(kmeans.labels_, values, k_clusters)
+            clusterValueDict = self.__getMedianOfSensitiveAttributePerCluster(kmeans.labels_, sensitiveValues, k_clusters)
 
             # Apply clustered data mode to log
         for case_index, case in enumerate(xesLog):
             for event_index, event in enumerate(case):
-                if(sensitiveAttribute in event.keys()):
-                    if sensitiveAttribute in valueToOneHotDict.keys():
-                        oneHotOfValue = valueToOneHotDict[sensitiveAttribute][event[sensitiveAttribute]]
-                        clusterOfValue = valueToClusterDict[oneHotOfValue]
-                        valueOfOneHot = oneHotToValueDict[sensitiveAttribute][clusterValueDict[clusterOfValue]]
-                        event[sensitiveAttribute] = valueOfOneHot
-                    else:
-                        event[sensitiveAttribute] = clusterValueDict[valueToClusterDict[event[sensitiveAttribute]]]
+                # Only proceed if the descriptive and sensitive attributes are present in the event
+                if(all([a in event.keys() for a in allAttributes])):
+
+                    # Discriminating values of the descriptive attributes as tuple
+                    descriptiveTuple = tuple([event[d] for d in descriptiveAttributes])
+
+                    # Cluster the sensitive attribute value belongs to, discriminated by the descriptive attributes
+                    cluster = descrToClusterDict[descriptiveTuple]
+
+                    # Assign new value to cluster
+                    event[sensitiveAttribute] = clusterValueDict[cluster]
 
         return self.AddExtension(xesLog, 'con', 'event', sensitiveAttribute)
 
@@ -58,32 +66,40 @@ class Condensation(AnonymizationOperation):
         allAttributes.append(sensitiveAttribute)
 
         values = self._getCaseMultipleAttributeValues(xesLog, allAttributes)
+        sensitiveValues = [x[-1] for x in values]
+        descriptiveValues = [x[:-1] for x in values]
+
         values, valueToOneHotDict, oneHotToValueDict = euclidClusterHelper.oneHotEncodeNonNumericAttributes(allAttributes, values)
+        descriptiveValuesEncoded = [x[:-1] for x in values]
 
         kmeans = KMeans(n_clusters=k_clusters)
-        kmeans.fit(values)
+        kmeans.fit(descriptiveValuesEncoded)
 
-        # Get a dict with the value as key and the cluster it is assigned to as value
-        valueToClusterDict = euclidClusterHelper.getValuesOfSensitiveAttributePerClusterAsDict(kmeans.labels_, values)
+        # Get a dict with the sensitive attribute's value as key and the cluster it is assigned to as value
+        # This is possible without using the descriptiveValuesEncoded, as all methods preserve the order of items passed to them, so no conversion between encoded and original is needed
+        descrToClusterDict = self.valuesToCluster(kmeans.labels_, descriptiveValues)
 
         clusterValueDict = {}
         if condensationFunction.lower() == "mode":
-            clusterValueDict = self.__getModeOfSensitiveAttributePerCluster(kmeans.labels_, values, k_clusters)
+            clusterValueDict = self.__getModeOfSensitiveAttributePerCluster(kmeans.labels_, sensitiveValues, k_clusters)
         elif condensationFunction.lower() == "mean":
-            clusterValueDict = self.__getMeanOfSensitiveAttributePerCluster(kmeans.labels_, values, k_clusters)
+            clusterValueDict = self.__getMeanOfSensitiveAttributePerCluster(kmeans.labels_, sensitiveValues, k_clusters)
         elif condensationFunction.lower() == "median":
-            clusterValueDict = self.__getMedianOfSensitiveAttributePerCluster(kmeans.labels_, values, k_clusters)
+            clusterValueDict = self.__getMedianOfSensitiveAttributePerCluster(kmeans.labels_, sensitiveValues, k_clusters)
 
         # Apply clustered data mode to log
         for case_index, case in enumerate(xesLog):
-            if(sensitiveAttribute in case.attributes.keys()):
-                if sensitiveAttribute in valueToOneHotDict.keys():
-                    oneHotOfValue = valueToOneHotDict[sensitiveAttribute][case.attributes[sensitiveAttribute]]
-                    clusterOfValue = valueToClusterDict[oneHotOfValue]
-                    valueOfOneHot = oneHotToValueDict[sensitiveAttribute][clusterValueDict[clusterOfValue]]
-                    case.attributes[sensitiveAttribute] = valueOfOneHot
-                else:
-                    case.attributes[sensitiveAttribute] = clusterValueDict[valueToClusterDict[case.attributes[sensitiveAttribute]]]
+            # Only proceed if the descriptive and sensitive attributes are present in the case
+            if(all([a in case.attributes.keys() for a in allAttributes])):
+
+                # Discriminating values of the descriptive attributes as tuple
+                descriptiveTuple = tuple([case.attributes[d] for d in descriptiveAttributes])
+
+                # Cluster the sensitive attribute value belongs to, discriminated by the descriptive attributes
+                cluster = descrToClusterDict[descriptiveTuple]
+
+                # Assign new value to cluster
+                case.attributes[sensitiveAttribute] = clusterValueDict[cluster]
 
         return self.AddExtension(xesLog, 'con', 'case', sensitiveAttribute)
 
@@ -237,7 +253,7 @@ class Condensation(AnonymizationOperation):
     def __getModeOfSensitiveAttributePerCluster(self, clusterLabels, values, k_clusters):
         clusterValues = {k: [] for k in range(k_clusters)}
         for i in range(len(clusterLabels)):
-            clusterValues[clusterLabels[i]].append(values[i][-1])
+            clusterValues[clusterLabels[i]].append(values[i])
 
         modeDict = {k: 0 for k in range(k_clusters)}
         for k in range(k_clusters):
@@ -248,7 +264,7 @@ class Condensation(AnonymizationOperation):
     def __getMedianOfSensitiveAttributePerCluster(self, clusterLabels, values, k_clusters):
         clusterValues = {k: [] for k in range(k_clusters)}
         for i in range(len(clusterLabels)):
-            clusterValues[clusterLabels[i]].append(values[i][-1])
+            clusterValues[clusterLabels[i]].append(values[i])
 
         medianDict = {k: 0 for k in range(k_clusters)}
         for k in range(k_clusters):
@@ -259,10 +275,26 @@ class Condensation(AnonymizationOperation):
     def __getMeanOfSensitiveAttributePerCluster(self, clusterLabels, values, k_clusters):
         clusterValues = {k: [] for k in range(k_clusters)}
         for i in range(len(clusterLabels)):
-            clusterValues[clusterLabels[i]].append(values[i][-1])
+            clusterValues[clusterLabels[i]].append(values[i])
 
         avgDict = {k: 0 for k in range(k_clusters)}
         for k in range(k_clusters):
             avgDict[k] = (sum(clusterValues[k]) * 1.0) / len(clusterValues[k])
 
         return avgDict
+
+    def valuesToCluster(self, clusterLabels, values):
+        valueToClusterDict = {}
+        for i in range(len(clusterLabels)):
+            # [-1] as the sensitive attribute value is always the last in the list
+            if tuple(values[i]) not in valueToClusterDict.keys():
+                valueToClusterDict[tuple(values[i])] = clusterLabels[i]
+        return valueToClusterDict
+
+    def clusterToValues(self, clusterLabels, values, k_clusters):
+        clusterToValueDict = {k: [] for k in range(k_clusters)}
+        for i in range(len(clusterLabels)):
+            # [-1] as the sensitive attribute value is always the last in the list
+            if values[i] not in clusterToValueDict[clusterLabels[i]]:
+                clusterToValueDict[clusterLabels[i]].append(values[i])
+        return clusterToValueDict
