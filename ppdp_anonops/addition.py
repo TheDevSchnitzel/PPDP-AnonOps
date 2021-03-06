@@ -1,6 +1,7 @@
 from .anonymizationOperation import AnonymizationOperation
 from copy import deepcopy
 import random
+import math
 from datetime import timedelta
 
 
@@ -88,5 +89,5 @@ class Addition(AnonymizationOperation):
             minTime = events[newIndex - 1]["time:timestamp"]
             maxTime = events[newIndex]["time:timestamp"]
 
-        secDelta = random.randint(0, (maxTime - minTime).total_seconds())
+        secDelta = random.randint(0, math.floor((maxTime - minTime).total_seconds()))
         return minTime + timedelta(seconds=secDelta)
