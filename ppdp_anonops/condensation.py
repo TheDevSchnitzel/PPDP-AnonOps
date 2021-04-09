@@ -25,8 +25,8 @@ class Condensation(AnonymizationOperation):
         # Extract the values of descriptive and sensitive attributes from the event log, preserving their order of discovery (IMPORTANT!)
         values = self._getEventMultipleAttributeValues(xesLog, allAttributes)
         sensitiveValues = [x[-1] for x in values]
-        #descriptiveValues = [x[:-1] for x in values]
-        descriptiveValues = [list(y) for y in set(tuple(x[:-1]) for x in values)]
+        descriptiveValues = [x[:-1] for x in values]
+        #descriptiveValues = [list(y) for y in set(tuple(x[:-1]) for x in values)]
 
         values, valueToOneHotDict, oneHotToValueDict = euclidClusterHelper.oneHotEncodeNonNumericAttributes(allAttributes, values)
         descriptiveValuesEncoded = [x[:-1] for x in values]
@@ -34,7 +34,7 @@ class Condensation(AnonymizationOperation):
         kmeans = KMeans(n_clusters=k_clusters)
         kmeans.fit(descriptiveValuesEncoded)
 
-        # Get a dict with the sensitive attribute's value as key and the cluster it is assigned to as value
+        # Get a dict with the descriptive attribute's value as key and the cluster it is assigned to as value
         # This is possible without using the descriptiveValuesEncoded, as all methods preserve the order of items passed to them, so no conversion between encoded and original is needed
         descrToClusterDict = self.valuesToCluster(kmeans.labels_, descriptiveValues)
 
@@ -53,8 +53,8 @@ class Condensation(AnonymizationOperation):
         # Extract the values of descriptive and sensitive attributes from the event log, preserving their order of discovery (IMPORTANT!)
         values = self._getCaseMultipleAttributeValues(xesLog, allAttributes)
         sensitiveValues = [x[-1] for x in values]
-        #descriptiveValues = [x[:-1] for x in values]
-        descriptiveValues = [list(y) for y in set(tuple(x[:-1]) for x in values)]
+        descriptiveValues = [x[:-1] for x in values]
+        #descriptiveValues = [list(y) for y in set(tuple(x[:-1]) for x in values)]
 
         values, valueToOneHotDict, oneHotToValueDict = euclidClusterHelper.oneHotEncodeNonNumericAttributes(allAttributes, values)
         descriptiveValuesEncoded = [x[:-1] for x in values]
@@ -82,8 +82,8 @@ class Condensation(AnonymizationOperation):
         # Extract the values of descriptive and sensitive attributes from the event log, preserving their order of discovery (IMPORTANT!)
         values = self._getEventMultipleAttributeValues(xesLog, allAttributes)
         sensitiveValues = [x[-1] for x in values]
-        #descriptiveValues = [x[:-1] for x in values]
-        descriptiveValues = [list(y) for y in set(tuple(x[:-1]) for x in values)]
+        descriptiveValues = [x[:-1] for x in values]
+        #descriptiveValues = [list(y) for y in set(tuple(x[:-1]) for x in values)]
 
         km = KModes(n_clusters=k_clusters, init='random')
         clusters = km.fit_predict(descriptiveValues)
@@ -107,8 +107,8 @@ class Condensation(AnonymizationOperation):
         # Extract the values of descriptive and sensitive attributes from the event log, preserving their order of discovery (IMPORTANT!)
         values = self._getCaseMultipleAttributeValues(xesLog, allAttributes)
         sensitiveValues = [x[-1] for x in values]
-        #descriptiveValues = [x[:-1] for x in values]
-        descriptiveValues = [list(y) for y in set(tuple(x[:-1]) for x in values)]
+        descriptiveValues = [x[:-1] for x in values]
+        #descriptiveValues = [list(y) for y in set(tuple(x[:-1]) for x in values)]
 
         km = KModes(n_clusters=k_clusters, init='random')
         clusters = km.fit_predict(descriptiveValues)
@@ -202,13 +202,13 @@ class Condensation(AnonymizationOperation):
 
         s = {}
         for v in valueList:
-            if v in s:
+            if v in s.keys():
                 s[v] += 1
             else:
                 s[v] = 1
 
         # Sort dict by value
-        s = {k: v for k, v in sorted(s.items(), key=lambda item: item[1])}
+        s = {k: v for k, v in sorted(s.items(), key=lambda item: item[1], reverse=True)}
         return next(iter(s.keys()))
 
     def __getModeOfSensitiveAttributePerCluster(self, clusterLabels, values, k_clusters):
